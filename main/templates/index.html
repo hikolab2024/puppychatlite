@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puppy Chat Lite</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <style>
+        /* ... 既存のCSSをそのまま保持 ... */
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Puppy Chat Lite</h1>
+        </div>
+        <div class="chat-messages" id="output">
+            <div class="message assistant-message">Puppy Chat Lite版へようこそ！メッセージを入力して会話を始めましょう。</div>
+        </div>
+        <div class="chat-input">
+            <textarea id="userInput" placeholder="メッセージを入力..." rows="1"></textarea>
+            <button id="sendButton">送信</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const outputDiv = document.getElementById('output');
+        const inputField = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMが完全に読み込まれ、解析されました');
+
+            socket.on('connect', () => {
+                console.log('サーバーに接続しました');
+                addMessage('system', 'サーバーに接続しました');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('サーバーから切断されました');
+                addMessage('system', 'サーバーから切断されました');
+            });
+
+            socket.on('response', (data) => {
+                console.log('応答を受信しました:', data);
+                addMessage('assistant', data.message);
+            });
+
+            inputField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                }
+            });
+
+            sendButton.addEventListener('click', send);
+        });
+
+        function send() {
+            const value = inputField.value.trim();
+            if (value) {
+                console.log('メッセージを送信中:', value);
+                addMessage('user', value);
+                socket.emit('message', value);
+                inputField.value = '';
+                outputDiv.scrollTop = outputDiv.scrollHeight;
+            }
+        }
+
+        function addMessage(sender, content) {
+            console.log('メッセージを追加中:', sender, content);
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', 'new-message', sender === 'user' ? 'user-message' : 'assistant-message');
+            messageDiv.textContent = content;
+            outputDiv.appendChild(messageDiv);
+            outputDiv.scrollTop = outputDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
